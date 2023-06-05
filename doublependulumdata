@@ -1,0 +1,65 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
+
+# Define the equations of motion for the double pendulum
+def double_pendulum(t, state):
+    theta1, theta2, omega1, omega2 = state
+
+    theta1_dot = omega1
+    theta2_dot = omega2
+
+    omega1_dot = (-g * (2 * m1 + m2) * np.sin(theta1) - m2 * g * np.sin(theta1 - 2 * theta2)
+                  - 2 * np.sin(theta1 - theta2) * m2 * (omega2**2 * L2 + omega1**2 * L1 * np.cos(theta1 - theta2))) \
+                 / (L1 * (2 * m1 + m2 - m2 * np.cos(2 * theta1 - 2 * theta2)))
+
+    omega2_dot = (2 * np.sin(theta1 - theta2) * (omega1**2 * L1 * (m1 + m2) + g * (m1 + m2) * np.cos(theta1)
+                  + omega2**2 * L2 * m2 * np.cos(theta1 - theta2))) \
+                 / (L2 * (2 * m1 + m2 - m2 * np.cos(2 * theta1 - 2 * theta2)))
+
+    return [theta1_dot, theta2_dot, omega1_dot, omega2_dot]
+
+# Prompt the user to enter the initial angles
+theta1_initial = float(input("Enter the initial angle for the first pendulum (in degrees): "))
+theta2_initial = float(input("Enter the initial angle for the second pendulum (in degrees): "))
+
+# Convert the angles from degrees to radians
+theta1_initial = np.deg2rad(theta1_initial)
+theta2_initial = np.deg2rad(theta2_initial)
+
+# Define the initial conditions and system parameters
+initial_state = [theta1_initial, theta2_initial, 0, 0]  # [theta1, theta2, omega1, omega2]
+L1 = 1.0  # length of the first pendulum arm
+L2 = 1.0  # length of the second pendulum arm
+m1 = 1.0  # mass of the first pendulum bob
+m2 = 1.0  # mass of the second pendulum bob
+g = 9.8  # acceleration due to gravity
+
+# Define the time span and time step
+t_span = (0, 10)  # simulation time span from 0 to 10 seconds
+dt = 0.01  # time step interval
+
+# Solve the initial value problem using solve_ivp with a custom time step
+t_eval = np.arange(t_span[0], t_span[1], dt)
+sol = solve_ivp(double_pendulum, t_span, initial_state, t_eval=t_eval)
+
+# Extract the results
+t = sol.t
+theta1, theta2 = sol.y[0], sol.y[1]
+x1 = L1 * np.sin(theta1)
+y1 = -L1 * np.cos(theta1)
+x2 = x1 + L2 * np.sin(theta2)
+y2 = y1 - L2 * np.cos(theta2)
+
+# Store the data in a text file
+data = np.column_stack((t, x1, y1, x2, y2, theta1, theta2))
+np.savetxt('double_pendulum_data.txt', data, delimiter=',')
+
+# Plot the angles over time
+plt.plot(t, theta1, label='Theta1')
+plt.plot(t, theta2, label='Theta2')
+plt.xlabel('Time')
+plt.ylabel('Angle')
+plt.title('Double Pendulum Angles over Time')
+plt.legend()
+plt.show()
