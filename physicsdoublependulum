@@ -1,0 +1,65 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from scipy.integrate import solve_ivp
+
+# Function to update the animation at each frame
+def update(frame):
+    plt.cla()  # Clear the current plot
+    x1 = L1 * np.sin(theta1[frame])
+    y1 = -L1 * np.cos(theta1[frame])
+    x2 = x1 + L2 * np.sin(theta2[frame])
+    y2 = y1 - L2 * np.cos(theta2[frame])
+    plt.plot([0, x1, x2], [0, y1, y2], '-o', lw=2)
+    plt.xlim(-L1 - L2, L1 + L2)
+    plt.ylim(-L1 - L2, L1 + L2)
+    plt.gca().set_aspect('equal')
+    plt.title('Double Pendulum Animation')
+
+# Define the equations of motion for the double pendulum
+def double_pendulum(t, state):
+    theta1, theta2, omega1, omega2 = state
+
+    theta1_dot = omega1
+    theta2_dot = omega2
+
+    omega1_dot = (-g * (2 * m1 + m2) * np.sin(theta1) - m2 * g * np.sin(theta1 - 2 * theta2)
+                  - 2 * np.sin(theta1 - theta2) * m2 * (omega2**2 * L2 + omega1**2 * L1 * np.cos(theta1 - theta2))) \
+                 / (L1 * (2 * m1 + m2 - m2 * np.cos(2 * theta1 - 2 * theta2)))
+
+    omega2_dot = (2 * np.sin(theta1 - theta2) * (omega1**2 * L1 * (m1 + m2) + g * (m1 + m2) * np.cos(theta1)
+                  + omega2**2 * L2 * m2 * np.cos(theta1 - theta2))) \
+                 / (L2 * (2 * m1 + m2 - m2 * np.cos(2 * theta1 - 2 * theta2)))
+
+    return [theta1_dot, theta2_dot, omega1_dot, omega2_dot]
+
+# Prompt the user to enter the initial angles of the pendulum
+theta1_initial = float(input("Enter the initial angle for the first pendulum (in degrees): "))
+theta2_initial = float(input("Enter the initial angle for the second pendulum (in degrees): "))
+
+# Convert the angles from degrees to radians
+theta1_initial = np.radians(theta1_initial)
+theta2_initial = np.radians(theta2_initial)
+
+# Define the initial conditions and system parameters
+initial_state = [theta1_initial, theta2_initial, 0, 0]  # [theta1, theta2, omega1, omega2]
+L1 = 1.0  # length of the first pendulum arm
+L2 = 1.0  # length of the second pendulum arm
+m1 = 1.0  # mass of the first pendulum bob
+m2 = 1.0  # mass of the second pendulum bob
+g = 9.8  # acceleration due to gravity
+
+# Define the time span
+t_span = (0, 25)  # simulation time span from 0 to 10 seconds
+
+# Solve the initial value problem using solve_ivp
+sol = solve_ivp(double_pendulum, t_span, initial_state)
+
+# Extract the results
+theta1, theta2 = sol.y[0], sol.y[1]
+
+# Create the animation
+fig = plt.figure()
+animation = FuncAnimation(fig, update, frames=len(sol.t), interval=50)
+
+plt.show()
